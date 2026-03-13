@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "docker:build": "docker build -t ocpp-simulator .",
+    "docker:run": "docker run -p 3000:3000 ocpp-simulator"
   },
   "dependencies": {
     "@base-ui/react": "^1.3.0",
