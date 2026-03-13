@@ -22,6 +22,7 @@ type SimulatorConfig = {
     autoReplyBootNotification: boolean;
     bootChargePointVendor: string;
     bootChargePointModel: string;
+    bootChargePointSerialNumber: string;
   };
 };
 
@@ -30,6 +31,7 @@ export default function Home() {
   const [autoReplyBootNotification, setAutoReplyBootNotification] = useState(false);
   const [bootChargePointVendor, setBootChargePointVendor] = useState("");
   const [bootChargePointModel, setBootChargePointModel] = useState("");
+  const [bootChargePointSerialNumber, setBootChargePointSerialNumber] = useState("");
   const { status, logs, connect, disconnect, clearLogs, send, setBootReplyConfig } = useOcppConnection();
 
   useEffect(() => {
@@ -37,8 +39,9 @@ export default function Home() {
       enabled: autoReplyBootNotification,
       chargePointVendor: bootChargePointVendor,
       chargePointModel: bootChargePointModel,
+      chargePointSerialNumber: bootChargePointSerialNumber,
     });
-  }, [autoReplyBootNotification, bootChargePointVendor, bootChargePointModel, setBootReplyConfig]);
+  }, [autoReplyBootNotification, bootChargePointVendor, bootChargePointModel, bootChargePointSerialNumber, setBootReplyConfig]);
   const scrollBottomRef = useRef<HTMLDivElement | null>(null);
   const importInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -51,8 +54,8 @@ export default function Home() {
 
   const buildConfig = useCallback((): SimulatorConfig => ({
     url,
-    settings: { autoReplyBootNotification, bootChargePointVendor, bootChargePointModel },
-  }), [url, autoReplyBootNotification, bootChargePointVendor, bootChargePointModel]);
+    settings: { autoReplyBootNotification, bootChargePointVendor, bootChargePointModel, bootChargePointSerialNumber },
+  }), [url, autoReplyBootNotification, bootChargePointVendor, bootChargePointModel, bootChargePointSerialNumber]);
 
   const applyConfig = useCallback((config: SimulatorConfig) => {
     if (typeof config.url === "string") setUrl(config.url);
@@ -62,6 +65,8 @@ export default function Home() {
       setBootChargePointVendor(config.settings.bootChargePointVendor);
     if (typeof config.settings?.bootChargePointModel === "string")
       setBootChargePointModel(config.settings.bootChargePointModel);
+    if (typeof config.settings?.bootChargePointSerialNumber === "string")
+      setBootChargePointSerialNumber(config.settings.bootChargePointSerialNumber);
   }, []);
 
   const saveConfig = useCallback(() => {
@@ -200,7 +205,7 @@ export default function Home() {
                 onCheckedChange={setAutoReplyBootNotification}
               />
               <Label htmlFor="auto-reply-boot" className="text-sm cursor-pointer">
-                Always reply to BootNotification with mock data
+                Always send BootNotification with mock data
               </Label>
             </div>
             {autoReplyBootNotification && (
@@ -220,6 +225,15 @@ export default function Home() {
                     value={bootChargePointModel}
                     onChange={(e) => setBootChargePointModel(e.target.value)}
                     placeholder="e.g. Terra AC W7"
+                    className="h-8 text-sm"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <Label className="text-xs text-muted-foreground">Charge Point Serial Number</Label>
+                  <Input
+                    value={bootChargePointSerialNumber}
+                    onChange={(e) => setBootChargePointSerialNumber(e.target.value)}
+                    placeholder="e.g. SN-00123456"
                     className="h-8 text-sm"
                   />
                 </div>

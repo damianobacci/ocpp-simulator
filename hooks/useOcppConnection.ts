@@ -15,6 +15,7 @@ export type BootReplyConfig = {
   enabled: boolean;
   chargePointVendor: string;
   chargePointModel: string;
+  chargePointSerialNumber: string;
 };
 
 let logIdCounter = 0;
@@ -34,7 +35,7 @@ export function useOcppConnection() {
   const [status, setStatus] = useState<ConnectionStatus>("disconnected");
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const wsRef = useRef<WebSocket | null>(null);
-  const bootReplyRef = useRef<BootReplyConfig>({ enabled: false, chargePointVendor: "", chargePointModel: "" });
+  const bootReplyRef = useRef<BootReplyConfig>({ enabled: false, chargePointVendor: "", chargePointModel: "", chargePointSerialNumber: "" });
 
   const setBootReplyConfig = useCallback((config: BootReplyConfig) => {
     bootReplyRef.current = config;
@@ -67,34 +68,25 @@ export function useOcppConnection() {
     ws.onopen = () => {
       setStatus("connected");
       addLog("system", "Connected (OCPP 1.6)");
+      const cfg = bootReplyRef.current;
+      if (cfg.enabled) {
+        const message = JSON.stringify([
+          2,
+          randomId(),
+          "BootNotification",
+          {
+            chargePointVendor: cfg.chargePointVendor,
+            chargePointModel: cfg.chargePointModel,
+            chargePointSerialNumber: cfg.chargePointSerialNumber,
+          },
+        ]);
+        ws.send(message);
+        addLog("out", message);
+      }
     };
 
     ws.onmessage = (event) => {
       addLog("in", event.data);
-      const cfg = bootReplyRef.current;
-      if (!cfg.enabled) return;
-
-      try {
-        const parsed = JSON.parse(event.data);
-        console.log("Received message:", parsed);
-        if (Array.isArray(parsed) && parsed[0] === 2 && parsed[2] === "TriggerMessage" && parsed[3]?.requestedMessage === "BootNotification") {
-          const msgId = parsed[1];
-          const reply = JSON.stringify([
-            3,
-            msgId,
-            {
-              status: "Accepted",
-              currentTime: new Date().toISOString(),
-              interval: 300,
-              heartbeatInterval: 300,
-            },
-          ]);
-          ws.send(reply);
-          addLog("out", reply);
-        }
-      } catch {
-        // not valid JSON, ignore
-      }
     };
 
     ws.onerror = () => {
