@@ -78,5 +78,14 @@ export function useOcppConnection() {
     setLogs([]);
   }, []);
 
-  return { status, logs, connect, disconnect, clearLogs };
+  const send = useCallback((action: string, payload: Record<string, unknown>) => {
+    const ws = wsRef.current;
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+    const messageId = crypto.randomUUID();
+    const message = JSON.stringify([2, messageId, action, payload]);
+    ws.send(message);
+    addLog("out", message);
+  }, [addLog]);
+
+  return { status, logs, connect, disconnect, clearLogs, send };
 }
