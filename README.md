@@ -14,7 +14,6 @@ Open [http://localhost:3000](http://localhost:3000).
 ## Running with Docker
 
 ```bash
-npm run docker:build
 npm run docker:run
 ```
 

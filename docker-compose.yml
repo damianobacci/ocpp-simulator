@@ -1,0 +1,7 @@
+services:
+  ocpp-simulator:
+    build: .
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./simulator-config.json:/app/simulator-config.json
