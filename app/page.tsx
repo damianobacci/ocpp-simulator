@@ -14,7 +14,6 @@ import { MessagePanel } from "@/components/MessagePanel";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 
-const STORAGE_KEY = "ocpp-simulator-config";
 
 type SimulatorConfig = {
   url: string;
@@ -69,9 +68,19 @@ export default function Home() {
       setBootChargePointSerialNumber(config.settings.bootChargePointSerialNumber);
   }, []);
 
-  const saveConfig = useCallback(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(buildConfig()));
-    toast.success("Configuration saved.");
+  const saveConfig = useCallback(async () => {
+    const config = buildConfig();
+    try {
+      const res = await fetch("/api/config", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(config),
+      });
+      if (!res.ok) throw new Error();
+      toast.success("Configuration saved.");
+    } catch {
+      toast.error("Failed to save configuration.");
+    }
   }, [buildConfig]);
 
   const downloadConfig = useCallback(() => {
@@ -101,12 +110,12 @@ export default function Home() {
     e.target.value = "";
   }, [applyConfig]);
 
-  // Load from localStorage on mount
+  // Load config from server on mount
   useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      try { applyConfig(JSON.parse(stored)); } catch { /* ignore */ }
-    }
+    fetch("/api/config")
+      .then((r) => r.json())
+      .then((data) => { if (data) applyConfig(data); })
+      .catch(() => { /* ignore */ });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
