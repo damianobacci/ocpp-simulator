@@ -1,6 +1,6 @@
 # OCPP Simulator
 
-This is a browser-based simulator for testing OCPP 1.6 charge point communication. You can connect to any OCPP 1.6 central system via WebSocket and send standard charge point messages directly from the UI. It uses OCPP schemas from [ocpp-messages](https://github.com/embyt/ocpp-messages).
+This is a browser-based simulator for testing OCPP 1.6 charge point communication. You can connect to any OCPP 1.6 central system via WebSocket and send standard charge point messages directly from the UI. I use it mainly to debug my OCPP server simulating various messages type from a chargepoint. It uses OCPP schemas from [ocpp-messages](https://github.com/embyt/ocpp-messages).
 
 ## Running locally
 
@@ -14,8 +14,8 @@ Open [http://localhost:3000](http://localhost:3000).
 ## Running with Docker
 
 ```bash
-docker build -t ocpp-simulator .
-docker run -p 3000:3000 ocpp-simulator
+npm run docker:build
+npm run docker:run
 ```
 
 Open [http://localhost:3000](http://localhost:3000).
