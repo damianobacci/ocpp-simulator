@@ -20,13 +20,25 @@ type SimulatorConfig = {
   url: string;
   settings: {
     autoReplyBootNotification: boolean;
+    bootChargePointVendor: string;
+    bootChargePointModel: string;
   };
 };
 
 export default function Home() {
   const [url, setUrl] = useState("");
   const [autoReplyBootNotification, setAutoReplyBootNotification] = useState(false);
-  const { status, logs, connect, disconnect, clearLogs, send } = useOcppConnection();
+  const [bootChargePointVendor, setBootChargePointVendor] = useState("");
+  const [bootChargePointModel, setBootChargePointModel] = useState("");
+  const { status, logs, connect, disconnect, clearLogs, send, setBootReplyConfig } = useOcppConnection();
+
+  useEffect(() => {
+    setBootReplyConfig({
+      enabled: autoReplyBootNotification,
+      chargePointVendor: bootChargePointVendor,
+      chargePointModel: bootChargePointModel,
+    });
+  }, [autoReplyBootNotification, bootChargePointVendor, bootChargePointModel, setBootReplyConfig]);
   const scrollBottomRef = useRef<HTMLDivElement | null>(null);
   const importInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -39,13 +51,17 @@ export default function Home() {
 
   const buildConfig = useCallback((): SimulatorConfig => ({
     url,
-    settings: { autoReplyBootNotification },
-  }), [url, autoReplyBootNotification]);
+    settings: { autoReplyBootNotification, bootChargePointVendor, bootChargePointModel },
+  }), [url, autoReplyBootNotification, bootChargePointVendor, bootChargePointModel]);
 
   const applyConfig = useCallback((config: SimulatorConfig) => {
     if (typeof config.url === "string") setUrl(config.url);
     if (typeof config.settings?.autoReplyBootNotification === "boolean")
       setAutoReplyBootNotification(config.settings.autoReplyBootNotification);
+    if (typeof config.settings?.bootChargePointVendor === "string")
+      setBootChargePointVendor(config.settings.bootChargePointVendor);
+    if (typeof config.settings?.bootChargePointModel === "string")
+      setBootChargePointModel(config.settings.bootChargePointModel);
   }, []);
 
   const saveConfig = useCallback(() => {
@@ -129,7 +145,7 @@ export default function Home() {
         )}
 
         <Button variant="outline"  onClick={clearLogs} title="Clear logs">
-          <Trash2 /> Clear
+          <Trash2 /> Clear Logs
         </Button>
 
         <div className="ml-auto flex items-center gap-1">
@@ -184,9 +200,31 @@ export default function Home() {
                 onCheckedChange={setAutoReplyBootNotification}
               />
               <Label htmlFor="auto-reply-boot" className="text-sm cursor-pointer">
-                Always reply to BootNotification with this mock data
+                Always reply to BootNotification with mock data
               </Label>
             </div>
+            {autoReplyBootNotification && (
+              <div className="flex flex-col gap-2 pl-1">
+                <div className="flex flex-col gap-1">
+                  <Label className="text-xs text-muted-foreground">Charge Point Vendor</Label>
+                  <Input
+                    value={bootChargePointVendor}
+                    onChange={(e) => setBootChargePointVendor(e.target.value)}
+                    placeholder="e.g. ABB"
+                    className="h-8 text-sm"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <Label className="text-xs text-muted-foreground">Charge Point Model</Label>
+                  <Input
+                    value={bootChargePointModel}
+                    onChange={(e) => setBootChargePointModel(e.target.value)}
+                    placeholder="e.g. Terra AC W7"
+                    className="h-8 text-sm"
+                  />
+                </div>
+              </div>
+            )}
           </div>
           <div className="p-4 border-b">
             <p className="text-sm font-semibold">Send Message</p>

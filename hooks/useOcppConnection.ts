@@ -11,16 +11,34 @@ export type LogEntry = {
 
 export type ConnectionStatus = "disconnected" | "connecting" | "connected" | "error";
 
+export type BootReplyConfig = {
+  enabled: boolean;
+  chargePointVendor: string;
+  chargePointModel: string;
+};
+
 let logIdCounter = 0;
 
 function timestamp() {
   return new Date().toISOString().replace("T", " ").slice(0, 23);
 }
 
+function randomId() {
+  const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+  return Array.from(crypto.getRandomValues(new Uint8Array(16)))
+    .map((b) => chars[b % chars.length])
+    .join("");
+}
+
 export function useOcppConnection() {
   const [status, setStatus] = useState<ConnectionStatus>("disconnected");
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const wsRef = useRef<WebSocket | null>(null);
+  const bootReplyRef = useRef<BootReplyConfig>({ enabled: false, chargePointVendor: "", chargePointModel: "" });
+
+  const setBootReplyConfig = useCallback((config: BootReplyConfig) => {
+    bootReplyRef.current = config;
+  }, []);
 
   const addLog = useCallback((direction: LogEntry["direction"], message: string) => {
     setLogs((prev) => [
@@ -53,6 +71,30 @@ export function useOcppConnection() {
 
     ws.onmessage = (event) => {
       addLog("in", event.data);
+      const cfg = bootReplyRef.current;
+      if (!cfg.enabled) return;
+
+      try {
+        const parsed = JSON.parse(event.data);
+        console.log("Received message:", parsed);
+        if (Array.isArray(parsed) && parsed[0] === 2 && parsed[2] === "TriggerMessage" && parsed[3]?.requestedMessage === "BootNotification") {
+          const msgId = parsed[1];
+          const reply = JSON.stringify([
+            3,
+            msgId,
+            {
+              status: "Accepted",
+              currentTime: new Date().toISOString(),
+              interval: 300,
+              heartbeatInterval: 300,
+            },
+          ]);
+          ws.send(reply);
+          addLog("out", reply);
+        }
+      } catch {
+        // not valid JSON, ignore
+      }
     };
 
     ws.onerror = () => {
@@ -81,11 +123,10 @@ export function useOcppConnection() {
   const send = useCallback((action: string, payload: Record<string, unknown>) => {
     const ws = wsRef.current;
     if (!ws || ws.readyState !== WebSocket.OPEN) return;
-    const messageId = crypto.randomUUID();
-    const message = JSON.stringify([2, messageId, action, payload]);
+    const message = JSON.stringify([2, randomId(), action, payload]);
     ws.send(message);
     addLog("out", message);
   }, [addLog]);
 
-  return { status, logs, connect, disconnect, clearLogs, send };
+  return { status, logs, connect, disconnect, clearLogs, send, setBootReplyConfig };
 }
